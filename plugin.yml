@@ -1,0 +1,94 @@
+name: CC-ChannelChat
+main: CyberTech\Main
+version: 1.0.0
+api: [1.4.0]
+description: Man WORK!
+
+commands:
+    purge:
+        permission: cc.op
+        description: "Start Purge"
+        useage: "/purge"
+    setprefix:
+        permission: cc.op.setprefix
+        description: "Set Players Prefix"
+        useage: "/setprefix <player>"
+    ch:
+        permission: cc.player
+        description: "Base Chat Command"
+        useage: "/ch help"
+    cmute:
+        permission: cc.op
+        description: "Mute Player"
+        useage: "/cmute <player>"
+    cunmute:
+        permission: cc.op
+        description: "Unmute Player"
+        useage: "/cunmute <player>"
+    tb:
+        permission: cc.op.tban
+        description: "Bans Player"
+        useage: "/tb <player> <hours> <mins>"
+    tempban:
+        permission: cc.op
+        description: "Temp Bans Player"
+        useage: "/tempban <player> <time> <reason>"
+    p1:
+        permission: cc.op
+        description: "Temp Bans Player"
+        useage: "/cban <player> <time> <reason>"
+    p2:
+        permission: cc.op
+        description: "Temp Bans Player"
+        useage: "/cban <player> <time> <reason>"
+    area:
+        permission: cc.op
+        description: "Temp Bans Player"
+        useage: "/cban <player> <time> <reason>"
+    tbp:
+        permission: cc.op.tban
+        description: "Pardons Player"
+        useage: "/tbp <player>"
+    treload:
+        permission: cc.op
+        description: "Reload"
+        useage: "/treload"
+    tsave:
+        permission: cc.op
+        description: "Save YML"
+        useage: "/tsave"
+    sethome:
+        permission: cc.player
+        description: "Set Your Home!"
+        useage: "/sethome <1|2|3> (f)"
+    home:
+        permission: cc.player
+        description: "Go To your Set Home!"
+        useage: "/home <1|2|3>"
+permissions:
+cc.op:
+    default: op
+    description: "Cool"
+    children:
+        cc.op.mute:
+            default: op
+            description: "Allowed To Mute Players"
+        cc.op.unmute:
+            default: op
+            description: "Allowed To UnMute Players"
+        cc.op.setprefix:
+            default: op
+            description: "Allowed To Set Players' Prefix"
+        cc.op.tban:
+            default: op
+            description: "Temp Ban Players"
+cc.player:
+    default: true
+    description: "Given To All Players"
+    children:
+        cc.player.switch:
+            default: true
+            description: "Given To All PK Players"
+        cc.player.mute:
+            default: true
+            description: "Allowed to Ignore Chat"
