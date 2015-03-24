@@ -2,7 +2,7 @@ name: CC-ChannelChat
 main: CyberTech\Main
 version: 1.0.0
 api: [1.4.0]
-description: Man WORK!
+description:
 
 commands:
     purge:

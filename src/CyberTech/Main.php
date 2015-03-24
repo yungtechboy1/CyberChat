@@ -33,13 +33,14 @@ use pocketmine\math\Vector3;
 use pocketmine\level\Position;
 use CyberTech\Purge\StartPurge;
 use pocketmine\event\player\PlayerDeathEvent;
+use CyberTech\Spam\Spam;
 
 class Main extends PluginBase implements Listener{
 
     private $playerschan = array();
     //Player Muted Chat
     private $pmc = array();
-    private $yml;
+    public $yml;
     private $channels = array();
     public $faction;
     private $p1;
@@ -51,6 +52,7 @@ class Main extends PluginBase implements Listener{
     public $purge;
     private $tpl;
     private $api;
+    public $spam;
     
     
     
@@ -59,11 +61,11 @@ class Main extends PluginBase implements Listener{
         $this->loadYml();
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         //$this->factionspro = FactionMain::getInstance();
-        $this->faction = $this->getServer()->getPluginManager()->getPlugin("CyberFaction");
+        $this->faction = $this->getServer()->getPluginManager()->getPlugin("CyberFactions");
         $this->CreateChannelInitals();
         $this->api = EconomyAPI::getInstance();
         $this->getLogger()->info("LOADED");
-        $this->getServer()->getScheduler()->scheduleDelayedTask(new StartPurge($this), 20 * 60 * 2);
+        $this->getServer()->getScheduler()->scheduleDelayedRepeatingTask(new StartPurge($this), 20 * 60 * 2, 20 * 60 * 60);
         //30 Mins
     }
     
@@ -75,9 +77,9 @@ class Main extends PluginBase implements Listener{
     public function onCommand(CommandSender $sender, Command $command, $label, array $args){
     $player = $this->getServer()->getPlayerExact($sender->getName());
     switch($command->getName()){
-                        case "purge":
-                            if ($this->purge == FALSE){
-                                new StartPurge($this);
+                        case "purge";
+                            if ($this->purge == false){
+                            $this->getServer()->getScheduler()->scheduleTask(new StartPurge($this));   
                             }
                             break;
                         case "ch":
@@ -550,7 +552,7 @@ class Main extends PluginBase implements Listener{
         }
     }
     
-    private $muted;
+    public $muted;
     /**
      * Has an admin Muted You???
      * 
@@ -581,6 +583,11 @@ class Main extends PluginBase implements Listener{
                 if ($channel == $pchannel){
                     if ($this->PlayerMutedChat($p) != TRUE){
                         //$message = $this->SetFormat($message, $event->getPlayer());
+                        if (!isset($this->spam[$p->getName()])){
+                            $this->spam[$p->getName()] = 0;
+                        }else{
+                            $this->spam[$p->getName()] += 1;
+                        }
                         $p->sendMessage($message);
                         //$this->getLogger()->info($message);
                         //$this->getLogger()->log($level, $message);
@@ -596,6 +603,17 @@ class Main extends PluginBase implements Listener{
             return true;
         }
     }
+    
+    public function isPlayerSpamming(Player $player){
+        if (isset($this->spam[$player->getName()])){
+            if ($this->spam[$player->getName()] >= 5){
+                $this->getServer()->getScheduler()->scheduleTask(new Spam($this, $player));
+                return true;
+            }
+        }
+    }
+    
+    
    //$this->playerschan["yungtech"] = "HOME"
     public function GetPlayersChannel(Player $p){
         $playern = $p->getName();
@@ -673,6 +691,7 @@ class Main extends PluginBase implements Listener{
             ),
             "format" => "[%prefix][%faction]<%player>: %message",
             "default-prfix" => "STEVE",
+            "spammer"=>array()
         )))->getAll();
         $this->bans = (new Config($this->getServer()->getDataPath() . "/plugins/CC/" . "Bans.yml", Config::YAML ,array()))->getAll();
         $this->pips = (new Config($this->getServer()->getDataPath() . "/plugins/CC/" . "Player-IP.yml", Config::YAML ,array()))->getAll();
