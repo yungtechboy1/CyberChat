@@ -34,6 +34,8 @@ use pocketmine\level\Position;
 use CyberTech\Purge\StartPurge;
 use pocketmine\event\player\PlayerDeathEvent;
 use CyberTech\Spam\Spam;
+use CyberTech\Spam\Clear;
+use pocketmine\event\player\PlayerMoveEvent;
 
 class Main extends PluginBase implements Listener{
 
@@ -65,7 +67,8 @@ class Main extends PluginBase implements Listener{
         $this->CreateChannelInitals();
         $this->api = EconomyAPI::getInstance();
         $this->getLogger()->info("LOADED");
-        $this->getServer()->getScheduler()->scheduleDelayedRepeatingTask(new StartPurge($this), 20 * 60 * 2, 20 * 60 * 60);
+        $this->getServer()->getScheduler()->scheduleDelayedRepeatingTask(new StartPurge($this), 20 * 60 * 2, 20 * 60 * 20);
+        $this->getServer()->getScheduler()->scheduleRepeatingTask(new Clear($this), 20*5);
         //30 Mins
     }
     
@@ -81,6 +84,16 @@ class Main extends PluginBase implements Listener{
                             if ($this->purge == false){
                             $this->getServer()->getScheduler()->scheduleTask(new StartPurge($this));   
                             }
+                            break;
+                        case "chon":
+                            $this->chatoff = false;
+                            $this->getServer()->broadcastMessage("All Chat Is UnMuted!");
+                            return true;
+                            break;
+                        case "choff":
+                            $this->chatoff = true;
+                            $this->getServer()->broadcastMessage("All Chat Is Muted!");
+                            return true;
                             break;
                         case "ch":
                             if (isset($args[0]) && $args[0] !== "" && $args[0] == "help"){
@@ -154,7 +167,7 @@ class Main extends PluginBase implements Listener{
                                     $x++;
                                 }
                             }else{
-                                $player->sendMessage("Unknown Command!");
+                                if ($sender instanceof Player){$player->sendMessage("Unknown Command!");}
                                 return false;
                             }
                             break;
@@ -269,14 +282,10 @@ class Main extends PluginBase implements Listener{
                             }
                             break;
                         case "treload":
-                            if ($player->hasPermission("cc.op")){
                                 $this->loadYml();
-                            }
                             break;
                         case "tsave":
-                            if ($player->hasPermission("cc.op")){
                                 $this->SaveYML();
-                            }
                             break;
                         case "sethome":
                             if ($player instanceof Player){
@@ -349,13 +358,29 @@ class Main extends PluginBase implements Listener{
     return false;
     }
     
+    public function onMove(PlayerMoveEvent $event){
+        if($event->getPlayer() instanceof Player and !$event->getPlayer()->isOp()){
+            $player = $event->getPlayer();                    
+            $block = $event->getPlayer()->getLevel()->getBlock(new Vector3($player->getX(),$player->getY()-1,$player->getZ()));
+            if($block->getID() == 0){
+                if(!isset($this->flyers[$player->getName()])) $this->flyers[$player->getName()] = 0;
+                $this->flyers[$player->getName()]++;
+                if($this->flyers[$player->getName()] >= 180){ $this->AddTempBan($player->getName(), 15 , 0);$this->flyers[$player->getName()] = 0;}
+            }else{
+                $this->flyers[$player->getName()] = 0;
+            }
+            }
+            }
+    
     public function AddTempBan($name, $mins , $hours) {
         $player = $this->getServer()->getPlayer($name);
         if($player instanceof Player){
             $playern = $player->getName();
             $a = strtotime("+ $hours hours $mins mins");
             $this->bans[$playern] = $a;
-            $this->bans["IPS"][$player->getAddress()][] = $playern;
+            if (isset($this->bans["IPS"][$player->getAddress()]) && !in_array($playern, $this->bans["IPS"][$player->getAddress()])){
+                $this->bans["IPS"][$player->getAddress()][] = $playern;
+            }
             $this->SaveYML();
             $this->getServer()->broadcastMessage($playern ." Is Now Banned For $hours Hours and $mins Mins!");
             $player->kick("Temp Ban!");
@@ -397,6 +422,9 @@ class Main extends PluginBase implements Listener{
         $a = false;
         $z = 0;
         $c = false;
+        if ($this->GetPlayerPrefix($event->getPlayer()) !== "Steve"){
+            $event->getPlayer()->setNameTag("[".$this->GetPlayerPrefix($event->getPlayer())."] ".$event->getPlayer()->getName());
+        }
         if (isset($this->pips[$event->getPlayer()->getAddress()])){
             if (! in_array($event->getPlayer()->getName() , $this->pips[$event->getPlayer()->getAddress()], true)){
                 $this->pips[$event->getPlayer()->getAddress()][] = $event->getPlayer()->getName();
@@ -436,7 +464,7 @@ class Main extends PluginBase implements Listener{
         }
         //$this->bans["IPS"][$player->getAddress()][] = $playern;
         
-        if (isset($this->bans["IPS"][$event->getPlayer()->getAddress()]) && count($this->bans["IPS"][$event->getPlayer()->getAddress()]) >= 2){
+        if (isset($this->bans["IPS"][$event->getPlayer()->getAddress()]) && count($this->bans["IPS"][$event->getPlayer()->getAddress()]) >= 3){
              //$event->getPlayer()->kick("Your Still Banned!");
                 $event->setJoinMessage(null);
                 $task = New KickPlayer($this, $event->getPlayer());
@@ -576,18 +604,25 @@ class Main extends PluginBase implements Listener{
         $message = $this->SetFormat($event->getMessage(), $event->getPlayer());
         $sender = $event->getPlayer();
         $event->setCancelled(TRUE);
-        if ($this->IsPlayerMuted($event->getPlayer()) == FALSE && !($this->chatoff)){
+        if (!isset($this->spam[$sender->getName()])){
+            $this->spam[$sender->getName()] = 0;
+        }else{
+            $this->spam[$sender->getName()]++;
+        }
+        $this->isPlayerSpamming($sender);
+        if ($this->IsPlayerMuted($event->getPlayer()) == FALSE ){
+            if ($this->chatoff){
+                if (!$sender->isOp()){
+                $sender->sendMessage("Chat Is Disabled! Please Wait...");
+                return true;
+                }
+            }
             $loggedps = $this->getServer()->getOnlinePlayers();
             foreach ($loggedps as $p){
                 $pchannel = $this->GetPlayersChannel($p);
                 if ($channel == $pchannel){
                     if ($this->PlayerMutedChat($p) != TRUE){
                         //$message = $this->SetFormat($message, $event->getPlayer());
-                        if (!isset($this->spam[$p->getName()])){
-                            $this->spam[$p->getName()] = 0;
-                        }else{
-                            $this->spam[$p->getName()] += 1;
-                        }
                         $p->sendMessage($message);
                         //$this->getLogger()->info($message);
                         //$this->getLogger()->log($level, $message);
@@ -605,11 +640,9 @@ class Main extends PluginBase implements Listener{
     }
     
     public function isPlayerSpamming(Player $player){
-        if (isset($this->spam[$player->getName()])){
-            if ($this->spam[$player->getName()] >= 5){
-                $this->getServer()->getScheduler()->scheduleTask(new Spam($this, $player));
-                return true;
-            }
+        if (isset($this->spam[$player->getName()]) && $this->spam[$player->getName()] >= 3){
+        $this->getServer()->getScheduler()->scheduleTask(new Spam($this, $player));
+        return true;
         }
     }
     

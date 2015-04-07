@@ -30,6 +30,7 @@ class Unmute extends PluginTask {
     
     public function onRun($t) {
         $this->main->muted[$this->player->getName()] = FALSE;
+        unset($this->main->spam[$this->player->getName()]);
         //$this->main->yml["spammer"][$this->player->getName()] = 1;
         $this->player->sendMessage("Make Sure Not To Spam!");
     }

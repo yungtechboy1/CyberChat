@@ -9,6 +9,14 @@ commands:
         permission: cc.op
         description: "Start Purge"
         useage: "/purge"
+    chon:
+        permission: cc.op
+        description: "Turn All Chat On"
+        useage: "/chon"
+    choff:
+        permission: cc.op
+        description: "Turn All Chat Off"
+        useage: "/choff"
     setprefix:
         permission: cc.op.setprefix
         description: "Set Players Prefix"

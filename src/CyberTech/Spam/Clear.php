@@ -27,8 +27,7 @@ class Clear extends PluginTask {
     }
     
     public function onRun($t) {
-        unset($this->main->muted);
-        $this->main->muted = array();
+        $this->main->spam = array();
     }
     //put your code here
 }
